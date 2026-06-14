@@ -12,16 +12,16 @@ The project was implemented as part of a test assignment.
 - Generate loyalty card batches by series, quantity, and activity period.
 - Mark expired loyalty cards automatically in views or manually via a management command.
 
-## Tech Stack
+Example of a loyalty card list:
+![cards-list.png](docs/cards-list.png)
 
-- Python 3.14
-- Django 6
-- PostgreSQL
-- uv
-- Ruff
-- mypy
+Example of a loyalty card:
+![card.png](docs/card.png)
 
-## Local Setup
+Managing the loyalty card list:
+![cards-admin.png](docs/cards-admin.png)
+
+### Local Setup
 
 Install dependencies:
 ```bash
@@ -58,7 +58,7 @@ uv run python manage.py runserver
 
 Open the loyalty card list at `http://127.0.0.1:8000/cards/`.
 
-## Useful Commands
+### Useful Commands
 
 Expire outdated loyalty cards:
 
