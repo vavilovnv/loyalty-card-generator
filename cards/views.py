@@ -3,11 +3,13 @@
 from typing import Any
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Case, CharField, Func, Q, QuerySet, Value, When
 from django.db.models.functions import Cast, Coalesce
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from cards.forms import CardGenerationForm
@@ -20,6 +22,7 @@ from cards.services import (
 )
 
 
+@login_required
 def card_list(request: HttpRequest) -> HttpResponse:
     """Render a searchable list of loyalty cards."""
     expire_cards()
@@ -36,6 +39,7 @@ def card_list(request: HttpRequest) -> HttpResponse:
     return render(request, "cards/card_list.html", context)
 
 
+@login_required
 def card_detail(request: HttpRequest, pk: int) -> HttpResponse:
     """Render a loyalty card profile with purchase history."""
     expire_cards()
@@ -48,6 +52,7 @@ def card_detail(request: HttpRequest, pk: int) -> HttpResponse:
     return render(request, "cards/card_detail.html", context)
 
 
+@login_required
 def generate_cards_view(request: HttpRequest) -> HttpResponse:
     """Render and process the loyalty card generation form."""
     if request.method == "POST":
@@ -75,6 +80,7 @@ def generate_cards_view(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
+@login_required
 def activate_card(request: HttpRequest, pk: int) -> HttpResponseRedirect:
     """Activate a non-expired loyalty card."""
     expire_cards()
@@ -91,6 +97,7 @@ def activate_card(request: HttpRequest, pk: int) -> HttpResponseRedirect:
 
 
 @require_POST
+@login_required
 def deactivate_card(request: HttpRequest, pk: int) -> HttpResponseRedirect:
     """Deactivate a non-expired loyalty card."""
     expire_cards()
@@ -107,6 +114,7 @@ def deactivate_card(request: HttpRequest, pk: int) -> HttpResponseRedirect:
 
 
 @require_POST
+@login_required
 def delete_card(request: HttpRequest, pk: int) -> HttpResponseRedirect:
     """Delete a loyalty card."""
     card: Card = get_object_or_404(Card, pk=pk)
@@ -180,7 +188,11 @@ def _format_datetime(field_name: str) -> Func:
 
 def _redirect_back(request: HttpRequest, card: Card) -> HttpResponseRedirect:
     next_url: str | None = request.POST.get("next")
-    if next_url:
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
         return redirect(next_url)
 
     return redirect(reverse("cards:detail", kwargs={"pk": card.pk}))

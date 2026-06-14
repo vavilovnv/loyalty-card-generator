@@ -50,6 +50,10 @@ Create an admin user:
 uv run python manage.py createsuperuser
 ```
 
+The loyalty card interface requires authentication and uses the Django admin
+login page. Create an admin user before opening `/cards/`; otherwise you will
+be redirected to `/admin/login/` and will not be able to manage cards.
+
 Run the application locally:
 
 ```bash
