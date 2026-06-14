@@ -11,5 +11,4 @@ wheels/
 .idea/
 
 # Misc
-.python-version
 .env
