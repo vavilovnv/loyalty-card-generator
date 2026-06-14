@@ -79,6 +79,15 @@ Run type checking:
 uv run mypy .
 ```
 
+Run tests:
+
+```bash
+./scripts/test
+```
+
+The test suite uses the configured PostgreSQL database backend, so start
+PostgreSQL with `docker compose up -d` before running it locally.
+
 Run Django checks:
 
 ```bash

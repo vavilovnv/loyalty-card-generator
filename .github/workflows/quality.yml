@@ -7,6 +7,26 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: card_generator
+          POSTGRES_USER: card_generator
+          POSTGRES_PASSWORD: card_generator
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U card_generator -d card_generator"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      POSTGRES_DB: card_generator
+      POSTGRES_USER: card_generator
+      POSTGRES_PASSWORD: card_generator
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
 
     steps:
       - name: Check out repository
@@ -33,3 +53,6 @@ jobs:
 
       - name: Lint
         run: ./scripts/lint
+
+      - name: Test
+        run: ./scripts/test
