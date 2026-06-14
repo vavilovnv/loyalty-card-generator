@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ card.series }}-{{ card.number }} | Loyalty Card Generator{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-1">{{ card.series }}-{{ card.number }}</h1>
+      <p class="text-secondary mb-0">Loyalty card profile and purchase history.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'cards:list' %}">Back to list</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="bg-white border rounded p-3">
+        <dl class="row mb-0">
+          <dt class="col-5">Series</dt>
+          <dd class="col-7">{{ card.series }}</dd>
+          <dt class="col-5">Number</dt>
+          <dd class="col-7">{{ card.number }}</dd>
+          <dt class="col-5">Issued at</dt>
+          <dd class="col-7">{{ card.issued_at|date:"Y-m-d H:i:s" }}</dd>
+          <dt class="col-5">Expires at</dt>
+          <dd class="col-7">{{ card.expires_at|date:"Y-m-d H:i:s" }}</dd>
+          <dt class="col-5">Used at</dt>
+          <dd class="col-7">{{ card.used_at|date:"Y-m-d H:i:s"|default:"-" }}</dd>
+          <dt class="col-5">Balance</dt>
+          <dd class="col-7">{{ card.amount }}</dd>
+          <dt class="col-5">Status</dt>
+          <dd class="col-7">{{ card.get_status_display }}</dd>
+        </dl>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        {% if card.status != "expired" %}
+          {% if card.status == "activated" %}
+            <form method="post" action="{% url 'cards:deactivate' card.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-outline-secondary" type="submit">Deactivate</button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'cards:activate' card.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-outline-success" type="submit">Activate</button>
+            </form>
+          {% endif %}
+        {% endif %}
+        <form method="post" action="{% url 'cards:delete' card.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger" type="submit">Delete</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="bg-white border rounded">
+        <div class="border-bottom p-3">
+          <h2 class="h5 mb-0">Purchase history</h2>
+        </div>
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Purchased at</th>
+                <th>Amount</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for purchase in purchases %}
+                <tr>
+                  <td>{{ purchase.purchased_at|date:"Y-m-d H:i:s" }}</td>
+                  <td>{{ purchase.amount }}</td>
+                  <td>{{ purchase.description|default:"-" }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td class="text-center text-secondary py-4" colspan="3">No purchases found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Loyalty cards | Loyalty Card Generator{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-1">Loyalty cards</h1>
+      <p class="text-secondary mb-0">Manage loyalty cards.</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'cards:generate' %}">Generate loyalty cards</a>
+  </div>
+
+  <form class="row g-2 mb-3" method="get">
+    <div class="col">
+      <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search by series, number, dates, balance, or status">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-primary" type="submit">Search</button>
+    </div>
+    {% if query %}
+      <div class="col-auto">
+        <a class="btn btn-outline-secondary" href="{% url 'cards:list' %}">Reset</a>
+      </div>
+    {% endif %}
+  </form>
+
+  <div class="table-responsive bg-white border rounded">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Series</th>
+          <th>Number</th>
+          <th>Issued at</th>
+          <th>Expires at</th>
+          <th>Used at</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for card in cards %}
+          <tr>
+            <td>{{ card.series }}</td>
+            <td><a href="{% url 'cards:detail' card.pk %}">{{ card.number }}</a></td>
+            <td>{{ card.issued_at|date:"Y-m-d H:i:s" }}</td>
+            <td>{{ card.expires_at|date:"Y-m-d H:i:s" }}</td>
+            <td>{{ card.used_at|date:"Y-m-d H:i:s"|default:"-" }}</td>
+            <td>{{ card.get_status_display }}</td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-2">
+                {% if card.status != "expired" %}
+                  {% if card.status == "activated" %}
+                    <form method="post" action="{% url 'cards:deactivate' card.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-secondary" type="submit">Deactivate</button>
+                    </form>
+                  {% else %}
+                    <form method="post" action="{% url 'cards:activate' card.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-success" type="submit">Activate</button>
+                    </form>
+                  {% endif %}
+                {% endif %}
+                <form method="post" action="{% url 'cards:delete' card.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="text-center text-secondary py-4" colspan="7">No loyalty cards found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
