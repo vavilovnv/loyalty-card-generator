@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
@@ -10,7 +11,56 @@ from cards.models import Card, CardStatus
 from cards.tests.factories import create_card
 
 
-class CardListViewTests(TestCase):
+class AuthenticatedCardsTestCase(TestCase):
+    """Base test case for authenticated card views."""
+
+    def setUp(self) -> None:
+        """Log in a user before each test."""
+        super().setUp()
+        user_model = get_user_model()
+        user = user_model.objects.create_user(
+            username="cards-user",
+            password="password",
+        )
+        self.client.force_login(user)
+
+
+class AuthenticationRequiredTests(TestCase):
+    """Tests for authentication requirements on card views."""
+
+    def test_anonymous_card_list_redirects_to_admin_login(self) -> None:
+        # -- Arrange --
+        url = reverse("cards:list")
+
+        # -- Act --
+        response = self.client.get(url)
+
+        # -- Assert --
+        self.assertRedirects(
+            response,
+            f"/admin/login/?next={url}",
+            fetch_redirect_response=False,
+        )
+
+    def test_anonymous_activate_card_does_not_change_status(self) -> None:
+        # -- Arrange --
+        card = create_card()
+        url = reverse("cards:activate", kwargs={"pk": card.pk})
+
+        # -- Act --
+        response = self.client.post(url)
+
+        # -- Assert --
+        card.refresh_from_db()
+        self.assertRedirects(
+            response,
+            f"/admin/login/?next={url}",
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(card.status, CardStatus.NOT_ACTIVATED)
+
+
+class CardListViewTests(AuthenticatedCardsTestCase):
     """Tests for the loyalty card list view."""
 
     def test_card_list_expires_outdated_cards_before_rendering(self) -> None:
@@ -44,7 +94,7 @@ class CardListViewTests(TestCase):
         self.assertIn(activated_card, response.context["cards"])
 
 
-class CardDetailViewTests(TestCase):
+class CardDetailViewTests(AuthenticatedCardsTestCase):
     """Tests for the loyalty card detail view."""
 
     def test_card_detail_refreshes_usage_before_rendering(self) -> None:
@@ -61,7 +111,7 @@ class CardDetailViewTests(TestCase):
         self.assertIsNone(card.used_at)
 
 
-class GenerateCardsViewTests(TestCase):
+class GenerateCardsViewTests(AuthenticatedCardsTestCase):
     """Tests for the loyalty card generation view."""
 
     def test_get_generate_view_renders_form(self) -> None:
@@ -107,7 +157,7 @@ class GenerateCardsViewTests(TestCase):
         self.assertIn("count", response.context["form"].errors)
 
 
-class CardStatusActionViewTests(TestCase):
+class CardStatusActionViewTests(AuthenticatedCardsTestCase):
     """Tests for card activation and deactivation views."""
 
     def test_activate_card_sets_status_and_redirects_to_detail(self) -> None:
@@ -137,6 +187,19 @@ class CardStatusActionViewTests(TestCase):
             response, reverse("cards:list"), fetch_redirect_response=False
         )
 
+    def test_activate_card_ignores_external_next_redirect(self) -> None:
+        # -- Arrange --
+        card = create_card()
+
+        # -- Act --
+        response = self.client.post(
+            reverse("cards:activate", kwargs={"pk": card.pk}),
+            data={"next": "https://example.com/cards/"},
+        )
+
+        # -- Assert --
+        self.assertRedirects(response, reverse("cards:detail", kwargs={"pk": card.pk}))
+
     def test_activate_card_keeps_expired_card_expired(self) -> None:
         # -- Arrange --
         card = create_card(
@@ -165,7 +228,7 @@ class CardStatusActionViewTests(TestCase):
         self.assertEqual(card.status, CardStatus.NOT_ACTIVATED)
 
 
-class DeleteCardViewTests(TestCase):
+class DeleteCardViewTests(AuthenticatedCardsTestCase):
     """Tests for loyalty card deletion."""
 
     def test_delete_card_removes_card_and_redirects_to_list(self) -> None:

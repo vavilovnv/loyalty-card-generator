@@ -204,6 +204,24 @@ class RefreshCardUsageTests(TestCase):
         self.assertEqual(refreshed_card.amount, Decimal("0.00"))
         self.assertIsNone(refreshed_card.used_at)
 
+    def test_purchase_card_change_refreshes_old_and_new_cards(self) -> None:
+        # -- Arrange --
+        old_card = create_card(number="000000000020")
+        new_card = create_card(number="000000000021")
+        purchase = create_purchase(card=old_card, amount=Decimal("15.50"))
+
+        # -- Act --
+        purchase.card = new_card
+        purchase.save(update_fields=["card"])
+
+        # -- Assert --
+        old_card.refresh_from_db()
+        new_card.refresh_from_db()
+        self.assertEqual(old_card.amount, Decimal("0.00"))
+        self.assertIsNone(old_card.used_at)
+        self.assertEqual(new_card.amount, Decimal("15.50"))
+        self.assertEqual(new_card.used_at, purchase.purchased_at)
+
 
 class GenerateCardsCollisionTests(TestCase):
     """Tests for database collision handling during generation."""
