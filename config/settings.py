@@ -15,6 +15,18 @@ def env_value(name: str, default: str) -> str:
     return os.getenv(name, default)
 
 
+def required_env_value(name: str) -> str:
+    """Return a required environment variable value."""
+    import os
+
+    value: str | None = os.getenv(name)
+    if value is None or value == "":
+        msg: str = f"{name} environment variable is required."
+        raise RuntimeError(msg)
+
+    return value
+
+
 def env_bool(name: str, default: bool) -> bool:
     """Return a boolean environment variable value or a default."""
     value: str = env_value(name, str(default)).lower()
@@ -29,8 +41,8 @@ def env_list(name: str, default: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-SECRET_KEY: str = env_value("DJANGO_SECRET_KEY", "local-development-secret-key")
-DEBUG: bool = env_bool("DJANGO_DEBUG", True)
+SECRET_KEY: str = required_env_value("DJANGO_SECRET_KEY")
+DEBUG: bool = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS: list[str] = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 
 INSTALLED_APPS: list[str] = [
@@ -107,5 +119,7 @@ USE_TZ: bool = True
 
 STATIC_URL: str = "static/"
 STATIC_ROOT: Path = BASE_DIR / "staticfiles"
+
+LOGIN_URL: str = "/admin/login/"
 
 DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
